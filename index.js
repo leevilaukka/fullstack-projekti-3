@@ -29,6 +29,13 @@ app.get("/teapot", (req, res) => {
     });
 });
 
+app.get("/", (req, res) => {
+    res.json({
+        message: "Forum API",
+        documentation: "https://documenter.getpostman.com/view/10139458/UyrBiFmX"
+    });    
+})
+
 mongoose.connect(process.env.MONGOURI, { useNewUrlParser: true }, () => {
     console.log('Connected to database');
 });
