@@ -1,6 +1,6 @@
 const router = require('express').Router();
+const { json } = require('express/lib/response');
 const Post = require('../models/Post');
-
 
 /**
  * GET
@@ -28,6 +28,12 @@ router.get("/", (req, res) => {
 router.get("/:id", (req, res) => {
     const { id } = req.params;
 
+    if (!id) {
+        res.status(400).json({
+            message: 'No id provided!'
+        });
+    }
+
     Post.findById(id)
         .populate('comments')
         .then((thread) => {
@@ -51,12 +57,20 @@ router.get("/:id", (req, res) => {
         });
 });
 
+
+
 /**
  * POST
  */
 
 router.post('/', (req, res) => {
     const { title, content } = req.body;
+
+    if(!title || !content) {
+        return res.status(400).json({
+            message: 'Title and content are required!'
+        });
+    } 
 
     const editCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
@@ -83,10 +97,10 @@ router.post('/', (req, res) => {
 });
 
 /**
- * PUT
+ * PATCH
  */
 
-router.put('/:id', (req, res) => {
+router.patch('/:id', (req, res) => {
     const { title, content, editCode } = req.body;
 
     const { id } = req.params;
@@ -95,8 +109,11 @@ router.put('/:id', (req, res) => {
         .select('+editCode')
         .then((post) => {
             console.log(post);
-            if (post.editCode === editCode) {
+            if(post.locked) return res.status(400).json({
+                message: 'Post is locked! Please unlock to edit!'
+            });
 
+            if (post.editCode === editCode) {
                 post.title = title;
                 post.content = content;
 
@@ -118,6 +135,53 @@ router.put('/:id', (req, res) => {
                     message: 'Unauthorized!'
                 });
             }
+        })
+        .catch((err) => {
+            if (err.kind === 'ObjectId') {
+                res.status(404).json({
+                    message: 'Post not found!',
+                    error: err
+                });
+            } else {
+                res.status(500).json({
+                    message: 'Error editing Post!',
+                    error: err
+                });
+            }
+        }
+        );
+});
+
+// Send vote
+router.patch('/:id/vote/:vote', (req, res) => {
+    const { id, vote } = req.params;
+
+    Post.findById(id)
+        .then((post) => {
+            if(post.locked) return res.status(401).json({
+                message: 'Post is locked! Cannot vote!'
+            });
+
+            switch (vote) {
+                case 'up':
+                    post.votes++;
+                    break;
+                case 'down':
+                    post.votes--;
+                    break;
+                default:
+                    res.status(400).json({
+                        message: 'Invalid vote!'
+                    });
+            }
+
+            post.save().then((post) => {
+                res.json({
+                    message: 'Vote added!',
+                    vote,
+                    post
+                });
+            });
         })
         .catch((err) => {
             if (err.kind === 'ObjectId') {
@@ -171,6 +235,84 @@ router.delete('/:id', (req, res) => {
             } else {
                 res.status(500).json({
                     message: 'Error deleting post!',
+                    error: err
+                });
+            }
+        });
+});
+
+router.lock('/:id', (req, res) => {
+    const { id } = req.params;
+
+    const { editCode } = req.query;
+
+    Post.findById(id)
+        .select('+editCode')
+        .then((post) => {
+            console.log(post);
+            if (post.editCode === editCode) {
+                post.locked = true;
+                post.save()
+                    .then((post) => {
+                        res.json({
+                            message: 'Post locked!',
+                            post
+                        });
+                    })
+            } else {
+                res.status(401).json({
+                    message: 'Unauthorized!'
+                });
+            };
+        })
+        .catch((err) => {
+            if (err.kind === 'ObjectId') {
+                res.status(404).json({
+                    message: 'Post not found!',
+                    error: err
+                });
+            } else {
+                res.status(500).json({
+                    message: 'Error locking post!',
+                    error: err
+                });
+            }
+        });
+});
+
+router.unlock('/:id', (req, res) => {
+    const { id } = req.params;
+
+    const { editCode } = req.query;
+
+    Post.findById(id)
+        .select('+editCode')
+        .then((post) => {
+            console.log(post);
+            if (post.editCode === editCode) {
+                post.locked = false;
+                post.save()
+                    .then((post) => {
+                        res.json({
+                            message: 'Post unlocked!',
+                            post
+                        });
+                    })
+            } else {
+                res.status(401).json({
+                    message: 'Unauthorized!'
+                });
+            };
+        })
+        .catch((err) => {
+            if (err.kind === 'ObjectId') {
+                res.status(404).json({
+                    message: 'Post not found!',
+                    error: err
+                });
+            } else {
+                res.status(500).json({
+                    message: 'Error unlocking post!',
                     error: err
                 });
             }

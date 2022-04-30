@@ -38,6 +38,45 @@ router.get("/:id", (req, res) => {
         });
 });
 
+router.patch('/:id/vote/:vote', async (req, res) => {
+    const { id, vote } = req.params;
+
+    const comment = await Comment.findById(id)
+    const post = await Post.findById(comment.post)
+
+    console.log(post);
+
+    if (post.locked) return res.status(403).json({ message: 'Post is locked! Cannot vote on locked posts comments' });
+
+    switch (vote) {
+        case 'up':
+            comment.votes++;
+            break;
+        case 'down':
+            comment.votes--;
+            break;
+        default:
+            res.status(400).json({
+                message: 'Invalid vote!'
+            });
+    }
+
+    try {
+        comment.save().then((comment) => {
+            res.json({
+                message: 'Vote added!',
+                vote,
+                comment
+            });
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Error editing comment!',
+            error: err
+        });
+    }
+})
+
 
 router.post('/', (req, res) => {
     const { content, post } = req.body;
@@ -49,26 +88,31 @@ router.post('/', (req, res) => {
         editCode
     });
 
-    newComment.save()
-        .then((comment) => {
-            Post.findByIdAndUpdate(post, { $push: { comments: comment._id } })
-                .then((post) => {
-                    res.status(201).json({
-                        message: 'Comment created!',
-                        comment,
-                        post
-                    });
+    Post.findById(post)
+        .then((post) => {
+            if (post.locked) return res.status(400).json({
+                message: 'Post is locked!'
+            });
+
+            newComment.save()
+                .then((comment) => {
+                    Post.findByIdAndUpdate(post, { $push: { comments: comment._id } })
+                        .then((post) => {
+                            res.status(201).json({
+                                message: 'Comment created!',
+                                comment,
+                                post
+                            });
+                        })
+                        .catch((err) => {
+                            res.status(500).json({
+                                message: 'Error creating comment!',
+                                error: err
+                            });
+                        });
                 })
-                .catch((err) => {
-                    res.status(500).json({
-                        message: 'Error creating comment!',
-                        error: err
-                    });
-                });
-        })
+        });
 });
-
-
 
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;

@@ -14,6 +14,10 @@ const CommentSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "Post"
     },
+    votes: {
+        type: Number,
+        default: 0
+    },
     editCode: {
         type: String,
         required: true,

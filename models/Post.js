@@ -24,6 +24,14 @@ const PostSchema = new Schema({
         type: String,
         required: true,
         select: false
+    },
+    votes: {
+        type: Number,
+        default: 0
+    },
+    locked: {
+        type: Boolean,
+        default: false
     }
 })
 
