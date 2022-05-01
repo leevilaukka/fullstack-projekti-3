@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { json } = require('express/lib/response');
-const Post = require('../models/Post');
+const { Post, Comment } = require('../models');
 
 /**
  * GET
@@ -215,9 +215,12 @@ router.delete('/:id', (req, res) => {
             if (thread.editCode === editCode) {
                 Post.findByIdAndRemove(id)
                     .then((post) => {
-                        res.json({
-                            message: 'Post deleted!',
-                            post
+                        // Delete all comments associated with this post
+                        Comment.deleteMany({ post: id }).then(() => {
+                            res.json({
+                                message: 'Post deleted!',
+                                post
+                            });
                         });
                     })
             } else {
