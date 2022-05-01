@@ -1,12 +1,11 @@
 const router = require('express').Router();
-const { json } = require('express/lib/response');
 const { Post, Comment } = require('../models');
 
 /**
  * GET
  */
 
-// Get all posts localhost:3000/posts
+// Get all posts
 router.get("/", (req, res) => {
     Post.find()
         .then((posts) => {
@@ -63,6 +62,7 @@ router.get("/:id", (req, res) => {
  * POST
  */
 
+// Create new post
 router.post('/', (req, res) => {
     const { title, content } = req.body;
 
@@ -100,6 +100,7 @@ router.post('/', (req, res) => {
  * PATCH
  */
 
+// Edit post
 router.patch('/:id', (req, res) => {
     const { title, content, editCode } = req.body;
 
@@ -116,12 +117,13 @@ router.patch('/:id', (req, res) => {
             if (post.editCode === editCode) {
                 post.title = title;
                 post.content = content;
+                post.edited = true;
 
                 post.save()
-                    .then((thread) => {
+                    .then((post) => {
                         res.json({
                             message: 'Post edited!',
-                            thread
+                            post
                         });
                     })
                     .catch((err) => {
@@ -244,6 +246,7 @@ router.delete('/:id', (req, res) => {
         });
 });
 
+// Lock post
 router.lock('/:id', (req, res) => {
     const { id } = req.params;
 
@@ -283,6 +286,7 @@ router.lock('/:id', (req, res) => {
         });
 });
 
+// Unlock post
 router.unlock('/:id', (req, res) => {
     const { id } = req.params;
 
@@ -292,7 +296,7 @@ router.unlock('/:id', (req, res) => {
         .select('+editCode')
         .then((post) => {
             console.log(post);
-            
+
             if(!post.locked) return res.status(400).json({
                 message: 'Post is not locked!'
             });

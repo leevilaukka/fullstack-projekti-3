@@ -10,10 +10,6 @@ const PostSchema = new Schema({
         type: String,
         required: true
     },
-    date: {
-        type: Date,
-        default: Date.now
-    },
     comments: [
         {
             type: Schema.Types.ObjectId,
@@ -32,7 +28,11 @@ const PostSchema = new Schema({
     locked: {
         type: Boolean,
         default: false
+    },
+    edited: {
+        type: Boolean,
+        default: false
     }
-})
+}, {timestamps: true})
 
 module.exports = mongoose.model("Post", PostSchema);
