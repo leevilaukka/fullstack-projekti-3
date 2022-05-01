@@ -35,10 +35,10 @@ router.get("/:id", (req, res) => {
 
     Post.findById(id)
         .populate('comments')
-        .then((thread) => {
+        .then((post) => {
             res.json({
                 message: 'Post found!',
-                thread
+                post
             });
         })
         .catch((err) => {
