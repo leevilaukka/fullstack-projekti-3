@@ -292,6 +292,11 @@ router.unlock('/:id', (req, res) => {
         .select('+editCode')
         .then((post) => {
             console.log(post);
+            
+            if(!post.locked) return res.status(400).json({
+                message: 'Post is not locked!'
+            });
+
             if (post.editCode === editCode) {
                 post.locked = false;
                 post.save()
